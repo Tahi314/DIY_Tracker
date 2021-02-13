@@ -8,7 +8,7 @@ uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 
 void read_sensor();
-void send_serial(float qx, float qy, float qz, float qw);
+void send_serial(float qx, float qy, float qz, float qw,float ax,float ay,float az);
 
 void setup() {
     Serial.begin(115200);
@@ -28,10 +28,28 @@ void loop() {
 void read_sensor() {
     // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     imu::Quaternion quat = bno.getQuat();
-    send_serial(quat.x(), quat.y(), quat.z(), quat.w());
+    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+    send_serial(quat.x(), quat.y(), quat.z(), quat.w(),accel.x(),accel.y(),accel.z());
 }
 
-void send_serial(float qx, float qy, float qz, float qw) {
+void send_serial(float qx, float qy, float qz, float qw,float ax,float ay,float az){
+    Serial.print("s\t");
+    Serial.print(qx);
+    Serial.print("\t");
+    Serial.print(qy);
+    Serial.print("\t");
+    Serial.print(qz);
+    Serial.print("\t");
+    Serial.print(qw);
+    Serial.print("\t");
+    Serial.print(ax);
+    Serial.print("\t");
+    Serial.print(ay);
+    Serial.print("\t");
+    Serial.println(az);
+}
+
+/*void send_serial(float qx, float qy, float qz, float qw) {
     if (Serial.available() == 1) {
         byte inBuf[1];
         Serial.readBytes(inBuf, 1);
@@ -55,4 +73,4 @@ void send_serial(float qx, float qy, float qz, float qw) {
     if (Serial.available() > 1) {
         while (Serial.available() > 0) Serial.read();
     }
-}
+}*/
