@@ -1,38 +1,52 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
 #include <Arduino.h>
-#include <Wire.h>
+#include <BluetoothSerial.h>
 #include <utility/imumaths.h>
 
-uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
-Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+Adafruit_BNO055 bno[4] = Adafruit_BNO055(55, 0x70);
 
-void read_sensor();
-void send_serial(float qx, float qy, float qz, float qw,float ax,float ay,float az);
+BluetoothSerial SerialBT;
+
+void TCA9548A(uint8_t bus);
+void read_sensor(uint8_t num);
+void send_serial(float qx, float qy, float qz, float qw);
 
 void setup() {
     Serial.begin(115200);
+    SerialBT.begin("ZAKOTrackerV1.0");
+    Serial.println("The device started, now you can pair it with bluetooth!");
 
-    if (!bno.begin(bno.OPERATION_MODE_NDOF)) {
-        Serial.print("No BNO055 detected");
-        while (1)
-            ;
+    for (int i = 0; i < 5; i++) {
+        if (!bno[i].begin(bno->OPERATION_MODE_IMUPLUS)) {
+            Serial.print("BNO055_");
+            Serial.print(i);
+            Serial.print(" not detected\n");
+            while (1)
+                ;
+        }
     }
 }
 
 void loop() {
-    read_sensor();
-    // delay(BNO055_SAMPLERATE_DELAY_MS);
+    for (int i = 0; i < 5; i++) {
+        TCA9548A(i);
+        read_sensor(i);
+    }
 }
 
-void read_sensor() {
-    // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-    send_serial(quat.x(), quat.y(), quat.z(), quat.w(),accel.x(),accel.y(),accel.z());
+void TCA9548A(uint8_t bus) {
+    Wire.beginTransmission(0x70);
+    Wire.write(1 << bus);
+    Wire.endTransmission();
 }
 
-void send_serial(float qx, float qy, float qz, float qw,float ax,float ay,float az){
+void read_sensor(uint8_t num) {
+    imu::Quaternion quat = bno[num].getQuat();
+    send_serial(quat.x(), quat.y(), quat.z(), quat.w());
+}
+
+void send_serial(float qx, float qy, float qz, float qw) {
     Serial.print("s\t");
     Serial.print(qx);
     Serial.print("\t");
@@ -40,13 +54,7 @@ void send_serial(float qx, float qy, float qz, float qw,float ax,float ay,float 
     Serial.print("\t");
     Serial.print(qz);
     Serial.print("\t");
-    Serial.print(qw);
-    Serial.print("\t");
-    Serial.print(ax);
-    Serial.print("\t");
-    Serial.print(ay);
-    Serial.print("\t");
-    Serial.println(az);
+    Serial.println(qw);
 }
 
 /*void send_serial(float qx, float qy, float qz, float qw) {
