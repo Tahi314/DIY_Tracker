@@ -55,3 +55,29 @@ void send_serial(float inDataArray[20]) {
     }
     SerialBT.print("\n");
 }
+
+/*void send_serial(float qx, float qy, float qz, float qw) {
+    if (Serial.available() == 1) {
+        byte inBuf[1];
+        Serial.readBytes(inBuf, 1);
+        if (inBuf[0] == 's') {
+            byte outBuf[10];
+            outBuf[0] = 's';
+            outBuf[1] = (int16_t)(qx * 100) >> 8;
+            outBuf[2] = (int16_t)(qx * 100) & 0xFF;
+            outBuf[3] = (int16_t)(qy * 100) >> 8;
+            outBuf[4] = (int16_t)(qy * 100) & 0xFF;
+            outBuf[5] = (int16_t)(qz * 100) >> 8;
+            outBuf[6] = (int16_t)(qz * 100) & 0xFF;
+            outBuf[7] = (int16_t)(qw * 100) >> 8;
+            outBuf[8] = (int16_t)(qw * 100) & 0xFF;
+            outBuf[9] = 'e';
+            Serial.write(outBuf, 10);
+        } else {
+            while (Serial.available() > 0) Serial.read();
+        }
+    }
+    if (Serial.available() > 1) {
+        while (Serial.available() > 0) Serial.read();
+    }
+}*/
