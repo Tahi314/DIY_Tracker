@@ -4,6 +4,8 @@
 #include <BluetoothSerial.h>
 #include <utility/imumaths.h>
 
+#include <SparkFun_I2C_Mux_Arduino_Library.h>
+
 Adafruit_BNO055 bno[4] = Adafruit_BNO055(55, 0x70);
 
 BluetoothSerial SerialBT;
