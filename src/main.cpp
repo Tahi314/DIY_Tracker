@@ -1,85 +1,60 @@
-#include <Adafruit_BNO055.h>
-#include <Adafruit_Sensor.h>
-#include <Arduino.h>
-#include <BluetoothSerial.h>
-#include <utility/imumaths.h>
+#include <Wire.h>
 
-#include <SparkFun_I2C_Mux_Arduino_Library.h>
+#include <SparkFun_I2C_Mux_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_I2C_Mux
+QWIICMUX myMux;
 
-Adafruit_BNO055 bno[4] = Adafruit_BNO055(55, 0x70);
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("Qwiic Mux Shield Read Example");
 
-BluetoothSerial SerialBT;
+  Wire1.begin(); //This line will fail to compile on an Uno. Use a dev platform with multiple Wire ports
 
-void SwitchI2C(uint8_t bus);  //TCA9548A
-void send_serial(float inDataArray[20]);
+  //Setup mux to use Wire1. If you have multiple muxes, pass address as first argument
+  //ADR0 must have a the jumper closed with solder to use address 0x71. Use 0x70 for all jumpers open.
+  if (myMux.begin(0x70, Wire1) == false)
+  {
+    Serial.println("Mux not detected. Freezing...");
+    while (1)
+      ;
+  }
+  Serial.println("Mux detected");
 
-float QuatDataArray[20];
+  myMux.setPort(1); //Connect master to port labeled '1' on the mux
 
-void setup() {
-    Serial.begin(115200);
-    SerialBT.begin("ZAKOTrackerV1.0");
-    Serial.println("The device started, now you can pair it with bluetooth!");
+  byte currentPortNumber = myMux.getPort();
+  Serial.print("CurrentPort: ");
+  Serial.println(currentPortNumber);
 
-    for (int i = 0; i < 5; i++) {
-        if (!bno[i].begin(bno->OPERATION_MODE_IMUPLUS)) {
-            Serial.print("BNO055_No.");
-            Serial.print(i);
-            Serial.print(" not detected\n");
-            while (1)
-                ;
-        }
-    }
+  Serial.println("Begin scanning for I2C devices");
 }
 
-void loop() {
-    for (int i = 0; i < 5; i++) {
-        SwitchI2C(i);
-        imu::Quaternion quat = bno[i].getQuat();
-        QuatDataArray[i * 4] = quat.x();
-        QuatDataArray[i * 4 + 1] = quat.y();
-        QuatDataArray[i * 4 + 2] = quat.z();
-        QuatDataArray[i * 4 + 3] = quat.w();
-    }
-    send_serial(QuatDataArray);
-}
+void loop()
+{
+  Serial.println();
 
-void SwitchI2C(uint8_t bus) {
-    Wire.beginTransmission(0x70);
-    Wire.write(1 << bus);
-    Wire.endTransmission();
-}
+  byte nDevices = 0;
+  for (byte address = 1; address < 127; address++)
+  {
+    Wire1.beginTransmission(address);
+    byte error = Wire1.endTransmission();
 
-void send_serial(float inDataArray[20]) {
-    SerialBT.print("s\t");
-    for (int i = 0; i < 20; i++) {
-        SerialBT.print(QuatDataArray[i]);
-        SerialBT.print("\t");
-    }
-    SerialBT.print("\n");
-}
+    if (error == 0)
+    {
+      Serial.print("I2C device found at address 0x");
+      if (address < 0x10)
+        Serial.print("0");
+      Serial.print(address, HEX);
+      Serial.println();
 
-/*void send_serial(float qx, float qy, float qz, float qw) {
-    if (Serial.available() == 1) {
-        byte inBuf[1];
-        Serial.readBytes(inBuf, 1);
-        if (inBuf[0] == 's') {
-            byte outBuf[10];
-            outBuf[0] = 's';
-            outBuf[1] = (int16_t)(qx * 100) >> 8;
-            outBuf[2] = (int16_t)(qx * 100) & 0xFF;
-            outBuf[3] = (int16_t)(qy * 100) >> 8;
-            outBuf[4] = (int16_t)(qy * 100) & 0xFF;
-            outBuf[5] = (int16_t)(qz * 100) >> 8;
-            outBuf[6] = (int16_t)(qz * 100) & 0xFF;
-            outBuf[7] = (int16_t)(qw * 100) >> 8;
-            outBuf[8] = (int16_t)(qw * 100) & 0xFF;
-            outBuf[9] = 'e';
-            Serial.write(outBuf, 10);
-        } else {
-            while (Serial.available() > 0) Serial.read();
-        }
+      nDevices++;
     }
-    if (Serial.available() > 1) {
-        while (Serial.available() > 0) Serial.read();
-    }
-}*/
+  }
+
+  if (nDevices == 0)
+    Serial.println("No I2C devices found");
+  else
+    Serial.println("Done");
+
+  delay(1000);
+}
